@@ -111,13 +111,21 @@ class TestProductRoutes(TestCase):
     # ----------------------------------------------------------
     # TEST CREATE
     # ----------------------------------------------------------
-    def test_create_product(self):
-        """It should Create a new Product"""
+    def test_update_product(self):
+        """It should Update an existing Product"""
+        # create a product to update
         test_product = ProductFactory()
-        logging.debug("Test Product: %s", test_product.serialize())
         response = self.client.post(BASE_URL, json=test_product.serialize())
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+        # update the product
+        new_product = response.get_json()
+        new_product["description"] = "unknown"
+        response = self.client.put(f"{BASE_URL}/{new_product['id']}", json=new_product)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        updated_product = response.get_json()
+        self.assertEqual(updated_product["description"], "unknown")
+        
         # Make sure location header is set
         location = response.headers.get("Location", None)
         self.assertIsNotNone(location)
@@ -163,9 +171,12 @@ class TestProductRoutes(TestCase):
         response = self.client.post(BASE_URL, data={}, content_type="plain/text")
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
-    #
-    # ADD YOUR TEST CASES HERE
-    #
+    def test_get_product(self):
+        test_product = self._create_products(1)[0]
+        response = self.client.get(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["name"], test_product.name)
 
     ######################################################################
     # Utility functions
